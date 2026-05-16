@@ -10,95 +10,109 @@
 </head>
 <body>
 
-  <div class="app">
-
-    <!-- Header -->
-    <header class="app-header">
-      <h1>BarScan</h1>
-      <p class="subtitle">Barcode &amp; QR Scanner</p>
-    </header>
-
-    <!-- Setup panel -->
-    <section class="card setup-card">
-      <label class="field-label" for="camera-select">Camera</label>
-      <div class="select-wrap">
-        <select id="camera-select">
-          <option value="">Detecting cameras…</option>
-        </select>
-        <svg class="select-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M4 6l4 4 4-4"/>
+  <!-- ── IDLE SCREEN ──────────────────────────────── -->
+  <div class="screen" id="screen-idle">
+    <div class="idle-inner">
+      <div class="idle-logo">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect x="2" y="2" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="2"/>
+          <rect x="20" y="2" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="2"/>
+          <rect x="2" y="20" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="2"/>
+          <path d="M20 20h4v4h-4z M26 20h4 M20 26h4 M26 26h4v4h-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </div>
+      <h1>BarScan</h1>
 
-      <button class="btn-start" id="start-btn">
-        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M5 3.5l8 4.5-8 4.5V3.5z"/></svg>
-        Start Scanning
+      <div class="idle-fields">
+        <label class="form-label" for="camera-select">Camera</label>
+        <div class="select-wrap">
+          <select id="camera-select"><option>Detecting cameras…</option></select>
+          <svg class="chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2 4l4 4 4-4"/></svg>
+        </div>
+
+        <!-- Lock mode selector -->
+        <label class="form-label" for="lock-select">Format</label>
+        <div class="select-wrap">
+          <select id="lock-select">
+            <option value="">Any format</option>
+            <option value="QR_CODE">QR Code</option>
+            <option value="PDF_417">PDF417</option>
+            <option value="AZTEC">Aztec</option>
+            <option value="DATA_MATRIX">Data Matrix</option>
+            <option value="CODE_128">Code 128</option>
+            <option value="CODE_39">Code 39</option>
+            <option value="CODE_93">Code 93</option>
+            <option value="EAN_13">EAN-13</option>
+            <option value="EAN_8">EAN-8</option>
+            <option value="UPC_A">UPC-A</option>
+            <option value="UPC_E">UPC-E</option>
+            <option value="ITF">ITF</option>
+            <option value="CODABAR">Codabar</option>
+            <option value="RSS_14">RSS-14</option>
+            <option value="RSS_EXPANDED">RSS Expanded</option>
+          </select>
+          <svg class="chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2 4l4 4 4-4"/></svg>
+        </div>
+      </div>
+
+      <button class="btn-scan" id="start-btn">Scan</button>
+
+      <!-- Results list lives here on idle screen -->
+      <div class="result-section" id="result-section">
+        <div class="result-section-header">
+          <span class="result-section-title">History <span id="results-count">0</span></span>
+          <button class="link-btn" id="clear-btn">Clear</button>
+        </div>
+        <div id="results-list">
+          <p class="empty-msg" id="empty-hint">No scans yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCANNER SCREEN ────────────────────────────── -->
+  <div class="screen" id="screen-scanner" hidden>
+
+    <!-- Full-bleed video -->
+    <video id="preview" playsinline muted autoplay></video>
+    <canvas id="tracker-canvas"></canvas>
+
+    <!-- Top bar -->
+    <div class="scanner-topbar">
+      <button class="icon-btn" id="stop-btn" aria-label="Close scanner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
       </button>
-    </section>
+      <span class="scanner-mode-label" id="scanner-mode-label">Any format</span>
+      <div class="scanner-status" id="scanner-status">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">SCANNING</span>
+      </div>
+    </div>
 
-    <!-- Viewfinder -->
-    <section class="card viewfinder-card" id="viewfinder-card" hidden>
-      <div class="video-container">
-        <video id="preview" playsinline muted autoplay></video>
+    <!-- Viewfinder aim box (CSS corners only, no box drawn by JS here) -->
+    <div class="vf-aim" id="vf-aim" aria-hidden="true"></div>
 
-        <!-- Canvas drawn over video to highlight detected code -->
-        <canvas id="tracker-canvas"></canvas>
+    <!-- Bottom panel: switches between "scanning" hint and scanned result -->
+    <div class="scanner-bottom">
 
-        <!-- Aim frame shown while actively scanning -->
-        <div class="finder-overlay" id="finder-overlay" aria-hidden="true">
-          <div class="finder-box">
-            <span class="corner tl"></span>
-            <span class="corner tr"></span>
-            <span class="corner bl"></span>
-            <span class="corner br"></span>
-          </div>
-        </div>
-
-        <!-- Live / locked badge -->
-        <div class="live-badge" id="live-badge">
-          <span class="live-dot" id="live-dot"></span>
-          <span id="live-label">LIVE</span>
-        </div>
-
-        <!-- Lock-to-type pill — appears after first scan -->
-        <div class="lock-pill" id="lock-pill" hidden>
-          <span class="lock-pill-label">Lock to <strong id="lock-format-name"></strong></span>
-          <button class="lock-toggle" id="lock-toggle" role="switch" aria-checked="false" aria-label="Lock to detected format">
-            <span class="lock-thumb"></span>
-          </button>
-        </div>
+      <!-- Hint shown while scanning -->
+      <div class="bottom-hint" id="bottom-hint">
+        Point camera at a code
       </div>
 
-      <!-- Paused state: shown between scans while result is displayed -->
-      <div class="paused-overlay" id="paused-overlay" hidden>
-        <div class="paused-result">
-          <div class="paused-format" id="paused-format"></div>
-          <div class="paused-text" id="paused-text"></div>
+      <!-- Result card shown after a scan -->
+      <div class="bottom-result" id="bottom-result" hidden>
+        <div class="bottom-result-meta">
+          <span class="bottom-result-format" id="bottom-result-format"></span>
+          <button class="link-btn light" id="copy-btn">Copy</button>
         </div>
-        <button class="btn-next" id="next-btn">
-          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M5 3.5l8 4.5-8 4.5V3.5z"/></svg>
-          Scan Next
-        </button>
+        <div class="bottom-result-text" id="bottom-result-text"></div>
+        <button class="btn-scan-next" id="next-btn">Scan Next</button>
       </div>
 
-      <button class="btn-stop" id="stop-btn">
-        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="1.5"/></svg>
-        Stop
-      </button>
-    </section>
-
-    <!-- Results list -->
-    <section class="results-section">
-      <div class="results-header">
-        <span class="results-title">Results <span class="results-count" id="results-count">0</span></span>
-        <button class="clear-btn" id="clear-btn">Clear</button>
-      </div>
-
-      <div id="results-list" class="results-list">
-        <div class="empty-hint" id="empty-hint">Scan results will appear here.</div>
-      </div>
-    </section>
-
+    </div>
   </div>
 
 </body>
