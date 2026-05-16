@@ -40,7 +40,12 @@
     <section class="card viewfinder-card" id="viewfinder-card" hidden>
       <div class="video-container">
         <video id="preview" playsinline muted autoplay></video>
-        <div class="finder-overlay" aria-hidden="true">
+
+        <!-- Canvas drawn over video to highlight detected code -->
+        <canvas id="tracker-canvas"></canvas>
+
+        <!-- Aim frame shown while actively scanning -->
+        <div class="finder-overlay" id="finder-overlay" aria-hidden="true">
           <div class="finder-box">
             <span class="corner tl"></span>
             <span class="corner tr"></span>
@@ -48,10 +53,32 @@
             <span class="corner br"></span>
           </div>
         </div>
-        <div class="live-badge">
-          <span class="live-dot"></span>
-          LIVE
+
+        <!-- Live / locked badge -->
+        <div class="live-badge" id="live-badge">
+          <span class="live-dot" id="live-dot"></span>
+          <span id="live-label">LIVE</span>
         </div>
+
+        <!-- Lock-to-type pill — appears after first scan -->
+        <div class="lock-pill" id="lock-pill" hidden>
+          <span class="lock-pill-label">Lock to <strong id="lock-format-name"></strong></span>
+          <button class="lock-toggle" id="lock-toggle" role="switch" aria-checked="false" aria-label="Lock to detected format">
+            <span class="lock-thumb"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Paused state: shown between scans while result is displayed -->
+      <div class="paused-overlay" id="paused-overlay" hidden>
+        <div class="paused-result">
+          <div class="paused-format" id="paused-format"></div>
+          <div class="paused-text" id="paused-text"></div>
+        </div>
+        <button class="btn-next" id="next-btn">
+          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M5 3.5l8 4.5-8 4.5V3.5z"/></svg>
+          Scan Next
+        </button>
       </div>
 
       <button class="btn-stop" id="stop-btn">
@@ -60,7 +87,7 @@
       </button>
     </section>
 
-    <!-- Results -->
+    <!-- Results list -->
     <section class="results-section">
       <div class="results-header">
         <span class="results-title">Results <span class="results-count" id="results-count">0</span></span>
@@ -68,9 +95,7 @@
       </div>
 
       <div id="results-list" class="results-list">
-        <div class="empty-hint" id="empty-hint">
-          Scan results will appear here.
-        </div>
+        <div class="empty-hint" id="empty-hint">Scan results will appear here.</div>
       </div>
     </section>
 
